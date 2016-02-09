@@ -14,6 +14,8 @@ for(i=0;i<10;i++)
 				printf("\n%d\n",i*i*i);
 				
 	}
+printf("\nCheck\n");
+
 	
 }
 
