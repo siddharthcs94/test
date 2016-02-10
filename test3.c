@@ -9,7 +9,7 @@ int main()
 int size;
 unsigned char *buffer;
 char *pcm_name;
-unsigned int rate = 44100;
+unsigned int rate = 8000;
 int chan;
 int rc;
 unsigned int  val;
@@ -178,13 +178,13 @@ while(1)
 	//	while((tell=(ftell(fp)-tell))<=100)
 		
 			//count++;
-		fread(data,sizeof(unsigned char),800,fp);
+		fread(data,sizeof(unsigned char),120,fp);
 		
 	//	printf("\n\n\n\n%ld\n\n\n\n",count);
 
 			if(!feof(fp))
 				{
-					if(pcmreturn=snd_pcm_writei(pcm_handle,data,550)<0)
+					if(pcmreturn=snd_pcm_writei(pcm_handle,data,30)<0)
 						{
 							snd_pcm_prepare(pcm_handle);
 							printf("\n<<<<<<<<<<Buffer Underrun>>>>>>>\n");
