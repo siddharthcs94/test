@@ -1,9 +1,11 @@
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<USING MMAP>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+//i<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<USING MMAP>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
 
 #include<stdio.h>
 #include<alsa/asoundlib.h>
 #include<fcntl.h>
 #include<unistd.h>
+#include<sys/time.h>
+
 
 
 
@@ -16,7 +18,7 @@ const snd_pcm_channel_area_t *areas;
 int size;
 unsigned char *buffer;
 char *pcm_name;
-unsigned int rate = 8000;
+unsigned int rate = 44100;
 int chan;
 int rc;
 unsigned int  val;
@@ -114,15 +116,49 @@ size = frames*4;
 }
 */
 
-int first=0;
-
+int first=0;;
 int err;
 snd_pcm_sframes_t avail = snd_pcm_avail_update(pcm_handle);
 printf("\nNumber of frames available is : %d \n",(int)avail);
 
 
+//-------------------------------------------------------------------------------------------------------
+//<<<<<<<<<<<<<<<<<<<<<<DISPLAYING INFORMATION>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+//Buffer size
+
+snd_pcm_hw_params_get_buffer_size(hwparams, (snd_pcm_uframes_t*)&val);
+printf("\nThe buffer size is %d \n",val);
+
+
+//Buffer time
+
+snd_pcm_hw_params_get_buffer_time(hwparams, &val,0);
+printf("\nBuffer time is : %d \n",val);
+
+
+//Period size
+
+snd_pcm_hw_params_get_period_size(hwparams,&frames,0);
+printf("\nperiod size : %d \n",(int)frames);
+
+
+
+//Periods between buffers
+
 
 err=snd_pcm_mmap_begin(pcm_handle,&areas,&offset,&frames);
+
+
+//Periods between buffer
+
+snd_pcm_hw_params_get_periods(hwparams,&val,0);
+printf("\n Periods between buffer is : %d \n",val);
+
+
+
+
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
 
 if(err<0)
 	{
@@ -154,21 +190,27 @@ if(dest<0)
 
 
 //int *c = offset;
-//buffer = (unsigned char *)malloc(1000);
+buffer = (unsigned char *)malloc(1000);
 
 
 
 unsigned long buf = offset;
-if(read(dest,&offset,1)<0)
+ if(read(dest,&offset,1)<0)
 	{
 		perror("\nNo destination for read\n");
 		return -1;
 	}
 
+struct timeval tvbefore,tvafter;
+gettimeofday(&tvbefore,NULL);
+
+while(read(dest,buffer,100)!=0);
+gettimeofday(&tvafter,NULL);
+printf("\nTime taken by read() is %09ld \n",tvafter.tv_usec-tvbefore.tv_usec);
 
 
 
-
+/*
 
 
 while(1)
@@ -195,7 +237,7 @@ while(1)
 
 			
 	}
-	
+*/	
 }
 
 
