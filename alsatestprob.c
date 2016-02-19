@@ -294,7 +294,7 @@ long size=0;
 snd_pcm_sframes_t size2=512;
 long int temp ;
 //while(1)
-int err,sil;
+int err,sil,err2;
 
 unsigned char *buffer = (unsigned char*)malloc(3000);
 while(1)
@@ -304,17 +304,14 @@ while(1)
 		{
 		frames=size;
 		avail=snd_pcm_avail_update(pcm_handle);
-		printf("\n\nFrames available = %ld \n\n",avail);
+		printf("\n\n1. Frames available = %ld \n\n",avail);
 		if(avail<=frames)
 			{
-				//printf("\nNo frames available\n");
+			
+
 				snd_pcm_prepare(pcm_handle);
 
-				int err2 = snd_pcm_start(pcm_handle);
-					if(err2<0)
-						{	printf("\n\nCannot restart\n\n");
-							break;
-						}
+				
 			}
 
 	
@@ -327,12 +324,12 @@ while(1)
 		 		 return -1;
 		  	}
 
-		printf("\nFrames %ld\n",frames);
+		printf("\n2. Frames %ld\n",frames);
 
 	
 
-		for(i=0;i<2;i++)
-		{
+		
+		
 			j=0;
 			size=frames;	
 		ptr[i] = (unsigned char*)(areas[i].addr  + (areas[i].first/8) + offset*(areas[i].step/8));
@@ -341,56 +338,59 @@ while(1)
 				{
 					perror("\nPointer has NULL value\n");
 					return -1;
-				}
 		
+		}
+		
+
+		for(i=0;i<2;i++)
+
 		if(read(dest,ptr[i],2048!=0))
+		continue;
+		else exit(1);
+
 		
 		
-		{
 		
-		{
 		
 			
 				
 				commitres = snd_pcm_mmap_commit(pcm_handle,offset,frames);
 
-						//	if(commitres<0)
+							if(commitres<0)
 							{
 							//	snd_pcm_prepare(pcm_handle);
 						//		perror("\n<<<<<<<MEMORY NOT COMMITTED>>>>>>>>\n");
 							
 								
-								printf("\nCommit value 1 %ld \n",commitres);
+								printf("\n3. Commit value 1 %ld \n",commitres);
 							//	check2=0;
 								break;
+
 
 
 							}
 
 
-							//else
+							else
 							size-=frames;
 		
 							if(commitres)
-							printf("\nCommit value 2%ld \n",commitres);
+							printf("\n4. Commit value 2  %ld \n",commitres);
 
 			
+							
 
-		}//END OF INNER WHILE LOOP
-
-		}//END OF "IF" STATEMENT
-
-		else 	{
+/*		else 	{
 				check2=0;
 				exit(1);
 
 			}
-			
+*/
 	
 //		  snd_pcm_prepare(pcm_handle);
 		
 
-		}//END OF FOR LOOP
+	//	}//END OF FOR LOOP
 
 //		snd_pcm_recover(pcm_handle,err,sil);
 
