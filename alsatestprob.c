@@ -3,8 +3,10 @@
 #include<stdio.h>
 #include<alsa/asoundlib.h>
 #include<fcntl.h>
-#include<unistd.h>
-#include<sys/time.h>
+#include<stdlib.h>
+#include<time.h>
+//#include<unistd.h>
+//#include<sys/time.h>
 
 
 
@@ -20,6 +22,7 @@
 int main()
 {
 
+
 const snd_pcm_channel_area_t *areas;
 //unsigned char *buffer;
 char *pcm_name;
@@ -29,6 +32,10 @@ int rc;
 unsigned int  val;
 char check;
 snd_pcm_sframes_t pcmreturn;
+snd_pcm_sframes_t avail;
+snd_pcm_uframes_t thresh;
+
+
 
 //Set PCM stream and handle
 snd_pcm_t *pcm_handle;
@@ -39,7 +46,7 @@ snd_pcm_hw_params_t *hwparams;
 
 
 //pcm_name = (char *)malloc(10);
-pcm_name = "hw:0,0";
+pcm_name = "plughw:0,0";
 //pcm_name = "default";
 
 
@@ -133,29 +140,39 @@ snd_pcm_sframes_t commitres;
 
 int first=0;;
 //int err;
-snd_pcm_sframes_t avail = snd_pcm_avail_update(pcm_handle);
-printf("\nNumber of frames available is : %d \n",(int)avail);
 
+/*snd_pcm_sframes_t avail = snd_pcm_avail_update(pcm_handle);
+printf("\nNumber of frames available is : %d \n",(int)avail);
+*/
 
 //-------------------------------------------------------------------------------------------------------
 //<<<<<<<<<<<<<<<<<<<<<<DISPLAYING INFORMATION>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 //Buffer size
+unsigned int buffer_size;
+unsigned int period_time;
 
-snd_pcm_hw_params_get_buffer_size(hwparams, (snd_pcm_uframes_t*)&val);
-printf("\nThe buffer size is %d \n",val);
+snd_pcm_sframes_t period_size;
+unsigned int buffer_time;
+
+snd_pcm_hw_params_get_period_time(hwparams,&period_time,0);
+printf("\nPeriod Time : %d\n",period_time);
+
+
+snd_pcm_hw_params_get_buffer_size(hwparams, (snd_pcm_uframes_t*)&buffer_size);
+printf("\nThe buffer size is %d \n",buffer_size);
 
 
 //Buffer time
 
-snd_pcm_hw_params_get_buffer_time(hwparams, &val,0);
-printf("\nBuffer time is : %d \n",val);
+snd_pcm_hw_params_get_buffer_time(hwparams, &buffer_time,0);
+printf("\nBuffer time is : %d \n",buffer_time);
 
 
 //Period size
 
-snd_pcm_hw_params_get_period_size(hwparams,&frames,0);
-printf("\nperiod size : %d \n",(int)frames);
+snd_pcm_hw_params_get_period_size(hwparams,&period_size,0);
+printf("\nperiod size : %d \n",(int)period_size);
 
 
 
@@ -204,20 +221,7 @@ printf("\n Periods between buffer is : %d \n",val);
 
 
 
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
 
-
-
-/*
-
-commitres = snd_pcm_mmap_commit(pcm_handle,offset,frames);
-if(commitres<0)
-	{
-		printf("\nFrames not committed to memory\n");
-	}
-
-
-*/
 
 
 
@@ -233,6 +237,7 @@ if(dest<0)
 		perror("\nFile could not be opened\n");
 		return -1;
 	}
+
 
 
 
@@ -269,9 +274,10 @@ printf("\nNull pointer 1  allocated\n");
 if(ptr[0]==NULL)
 printf("\nNull pointer 0 allocated \n");
 
-//buffer = (unsigned char*)malloc(1000);
 
+buffer = (unsigned char*)malloc(1000);
 */
+
 
 int check2=1;
 
@@ -297,73 +303,254 @@ long int temp ;
 int err,sil,err2;
 
 unsigned char *buffer = (unsigned char*)malloc(3000);
+
+long k=0;
+
+
+
+
+
+
+
+
+
+/*
+     err=snd_pcm_mmap_begin(pcm_handle,&areas,&offset,&frames);
+      
+                        printf("\nOFFSET VALUE %ld \n",offset);
+                        printf("\nNUMBER OF FRAMES = %ld \n",frames);
+      
+      
+      
+                        if(err<0)
+                               {
+                                      printf("\n\nMMAP ERROR\n\n");
+                                       return -1;
+                              }
+      
+                      printf("\n2. Frames %ld\n",frames);
+      
+      
+      
+      
+      
+      
+                              size=frames;
+                              //printf("\nCECK2\n");
+                      for(i=0;i<2;i++)
+                      ptr[i] = (unsigned char*)(areas[i].addr  + (areas[i].first/8) + offset*(areas[i].step/8));
+
+*/
+
+/*
+while(1)
+	{	
+		for(int i=0;i<2;i++)
+		{
+		if(read(dest,buffer,10)>0)
+			{
+				printf("\n\n\n%d\n\n",dest);
+
+				continue;
+
+			}
+		else exit(1);
+		}
+
+	}
+
+*/
+
+
+
+
+//<<<<<<<<<<<SETTING SOFTWARE PARAMETERS>>>>>>>>>>>>>>>
+
+	
+snd_pcm_sw_params_t *swparams;
+
+snd_pcm_sw_params_malloc(&swparams);
+err = snd_pcm_sw_params_current(pcm_handle,swparams);
+if(err<0)
+perror("\nUnable fo initialise SW Parameters\n");
+
+
+//SETTING START THRESHOLD
+int threshtime; 
+
+threshtime = snd_pcm_sw_params_set_start_threshold(pcm_handle, swparams, (buffer_size/period_size)*period_size);
+
+
+err = snd_pcm_sw_params_get_start_threshold(swparams, &thresh);
+
+
+if(err<0)
+	{
+		perror("\nUnable to get start threshold time\n");
+
+		exit(-1);
+	}
+else
+	{	
+		printf("\nStart threshold is %u \n",(unsigned int)thresh);
+	}
+
+
+err = snd_pcm_sw_params(pcm_handle,swparams);
+if(err<0)
+{
+perror("\nUnable to set SW parameters\n");
+exit(-1);
+}
+
+//if(err<0)
+//perror("\nUnable to set software params\n");
+
+
+
+
+
+
+
+
+
+
+
+
+//<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>..
+
+snd_pcm_state_t state;
+
+
+clock_t goal ;
+
 while(1)
 	{
-		size=512;		
-		while(size>0)
-		{
-		frames=size;
-		avail=snd_pcm_avail_update(pcm_handle);
-		printf("\n\n1. Frames available = %ld \n\n",avail);
-		if(avail<=frames)
-			{
-			
+		
+		
+		
+		size=period_size;		
+	
+	
+	
+	
+		state = snd_pcm_state(pcm_handle);
+		printf("\nPCM state : %s \n",snd_pcm_state_name(state));
 
-				snd_pcm_prepare(pcm_handle);
+	
+	
+		if(state == SND_PCM_STATE_SUSPENDED)
+		{
+		perror("\nDevice suspended\n");
+		exit(-1);
+		}
+		
+		frames=size;
+
+
+		//CHECK NUMBER OF FRAMES AVAILABLE (WHICH CAN BE ALLOCATED)
+		avail=snd_pcm_avail_update(pcm_handle);
+		printf(" \n1. Frames available = %ld \n",avail);
+		
+		if(avail<frames)
+			{
+				
+				//PREPARE PCM DEVICE ONCE AVAILABLE FRAMES < FRAMES TO BE ALLOCATED
+				err = 	snd_pcm_prepare(pcm_handle);
+				if(err<0)
+					{
+						perror("\nFrames not prepared\n");
+						exit(-1);
+					}
 
 				
+				printf("\n\nNEW STATE %s \n\n",snd_pcm_state_name(state));
+
+	
 			}
 
 	
+
+	while(size>0)
+
+		{
+		
+		frames=size;
+
+		//SET ASIDE MEMORY SPACE USING MMAP
 		 err=snd_pcm_mmap_begin(pcm_handle,&areas,&offset,&frames);
-		  
-		  
+			 
+		
 		  if(err<0)
 		 	 {
-		  		printf("\n\nMMAP ERROR\n\n");
+		  		perror("\n\nMMAP ERROR\n\n");
 		 		 return -1;
 		  	}
 
-		printf("\n2. Frames %ld\n",frames);
-
-	
-
 		
-		
-			j=0;
-			size=frames;	
+				
+
+		for(i=0;i<2;i++)
+		{
+
 		ptr[i] = (unsigned char*)(areas[i].addr  + (areas[i].first/8) + offset*(areas[i].step/8));
-		
+	
 			if(ptr[i]==NULL)
 				{
 					perror("\nPointer has NULL value\n");
 					return -1;
 		
-		}
-		
+				}		
+		}//FOR LOOP ENDS HERE
 
-		for(i=0;i<2;i++)
-
-		if(read(dest,ptr[i],2048!=0))
-		continue;
-		else exit(1);
+					
 
 		
-		
-		
-		
-			
+			     for(int i=0;i<2;i++)
+			                      {k++;
+
+			                      if(read(dest,buffer,2048)>0)
+					      
+			                              {
+			                                   
+							  goal = 2500 + clock();
+							  while(goal>clock());
+
+							   // printf("\n\n\n%d\n\n",dest);
+			     				//	continue;
+
+
+			                                      
+			      
+			                              }
+			                      else 
+					      
+					      	{
+							perror("\nEnd of file\n");
+							printf("\nNUMBER OF WRITES %ld\n",k);
+
+					      		exit(1);
+						}
+			                      }//FOR LOOP ENDS HERE
+
+
+
 				
 				commitres = snd_pcm_mmap_commit(pcm_handle,offset,frames);
+					
+
+					
 
 							if(commitres<0)
-							{
-							//	snd_pcm_prepare(pcm_handle);
-						//		perror("\n<<<<<<<MEMORY NOT COMMITTED>>>>>>>>\n");
-							
-								
-								printf("\n3. Commit value 1 %ld \n",commitres);
-							//	check2=0;
+							{	
+								err = snd_pcm_prepare(pcm_handle);
+								if(err<0)
+									{
+									perror("\n<<<<<<<MEMORY NOT COMMITTED>>>>>>>>\n");
+									exit(1);
+									}
+
+									
 								break;
 
 
@@ -372,35 +559,16 @@ while(1)
 
 
 							else
-							size-=frames;
-		
-							if(commitres)
-							printf("\n4. Commit value 2  %ld \n",commitres);
+							size -= frames;
+							printf("\n COMMITED %ld \n",commitres);
 
-			
-							
-
-/*		else 	{
-				check2=0;
-				exit(1);
-
-			}
-*/
 	
-//		  snd_pcm_prepare(pcm_handle);
-		
+	
+	
+	
+	}//"SIZE>0" WHILE LOOP ENDS
 
-	//	}//END OF FOR LOOP
-
-//		snd_pcm_recover(pcm_handle,err,sil);
-
-
-	if(check2==0)
-	break;
-
-}//"SIZE>0" WHILE LOOP ENDS
-//snd_pcm_prepare(pcm_handle);
-}//OUTER MOST WHILE LOOP ENDS
+	}//OUTER MOST WHILE LOOP ENDS
 
 
 
@@ -412,14 +580,7 @@ while(1)
 }
 
 	
-/*
-	commitres = snd_pcm_mmap_commit(pcm_handle,offset,frames);
-	 if(commitres<0)ddress gives a preferred
-	         {
-	                 printf("\nFrames not committed to memory\n");
-	         }
 
-*/	
 
 
 
