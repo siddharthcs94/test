@@ -1,19 +1,20 @@
 
 #include<stdio.h>
 #include<stdlib.h>
-#include "sndfile.h"
-
+#include <sndfile.h>
 #include<alsa/asoundlib.h>
 
 int main()
 {
-char *filename = "sample6.wav";
+char *filename = "44k.wav";
  SF_INFO sfinfo;
   SNDFILE *f;
   f = sf_open(filename,SFM_READ, &sfinfo);
- printf("\nCHECK RATE %d \n",sfinfo.channels);
- 
- 
+ printf("\nCHECK RATE %d \n",sfinfo.samplerate);
+printf("\nCHECK CHANNELS %d \n",sfinfo.channels);
+printf("\nNumber of frames %ld \n",sfinfo.frames);
+
+int j; 
 
 
 snd_pcm_t *pcm_handle;
@@ -23,6 +24,8 @@ unsigned int err;
 pcm_name = "plughw:0,0";
 snd_pcm_hw_params_t *hwparams;
 unsigned int rate = sfinfo.samplerate;
+
+
 unsigned int channels = sfinfo.channels;
 unsigned int exact_rate;
 
@@ -86,27 +89,11 @@ if(snd_pcm_hw_params_set_access(pcm_handle,  hwparams,  SND_PCM_ACCESS_MMAP_INTE
 
 
 
-snd_pcm_sframes_t period_size=170;
+snd_pcm_sframes_t period_size;
 
-err = snd_pcm_hw_params_set_period_size(pcm_handle,  hwparams,  period_size,  0);
-	   if(err<0)       
-                 {       
-                         perror("\nCannot open PCM device\n");
-                         exit(0);
-                 }
+snd_pcm_hw_params_get_period_size(hwparams, &period_size,0);
+	
 printf("\nPeriod size is %ld \n",period_size);
-
-
-
-frames = 2048;
-if(snd_pcm_hw_params_set_buffer_size(pcm_handle,  hwparams,  frames)<0)
-	{
-		perror("\nCannot set buffer size\n");
-		exit(0);
-	}
-
-printf("\nBuffer size is %ld \n",frames);
-
 
 
 
